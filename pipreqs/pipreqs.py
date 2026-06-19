@@ -126,8 +126,14 @@ def get_all_imports(path, encoding="utf-8", extra_ignore_dirs=None, follow_links
     for root, dirs, files in walk:
         dirs[:] = [d for d in dirs if d not in ignore_dirs]
 
-        candidates.append(os.path.basename(root))
         py_files = [file for file in files if file_ext_is_allowed(file, DEFAULT_EXTENSIONS)]
+        if root != path and py_files:
+            rel_root = os.path.relpath(root, path)
+            while rel_root not in (os.curdir, ""):
+                package_name = os.path.basename(rel_root)
+                if package_name:
+                    candidates.append(package_name)
+                rel_root = os.path.dirname(rel_root)
         candidates.extend([os.path.splitext(filename)[0] for filename in py_files])
 
         files = [fn for fn in files if file_ext_is_allowed(fn, extensions)]
