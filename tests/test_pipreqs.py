@@ -131,6 +131,32 @@ class TestPipreqs(unittest.TestCase):
         self.assertIn("numpy", imports)
         self.assertNotIn("localns", imports)
 
+    def test_get_all_imports_ignores_nested_dir_basenames(self):
+        with tempfile.TemporaryDirectory() as project:
+            with open(os.path.join(project, "app.py"), "w") as f:
+                f.write("import numpy\nimport tests\n")
+            os.makedirs(os.path.join(project, "tests", "numpy"))
+            with open(os.path.join(project, "tests", "numpy", "helper.py"), "w") as f:
+                f.write("VALUE = 1\n")
+
+            imports = pipreqs.get_all_imports(project)
+
+        self.assertIn("numpy", imports)
+        self.assertNotIn("tests", imports)
+
+    def test_get_all_imports_keeps_src_layout_packages_local(self):
+        with tempfile.TemporaryDirectory() as project:
+            with open(os.path.join(project, "app.py"), "w") as f:
+                f.write("import my_pkg\nimport numpy\n")
+            os.makedirs(os.path.join(project, "src", "my_pkg"))
+            with open(os.path.join(project, "src", "my_pkg", "__init__.py"), "w"):
+                pass
+
+            imports = pipreqs.get_all_imports(project)
+
+        self.assertIn("numpy", imports)
+        self.assertNotIn("my_pkg", imports)
+
     def test_deduplicate_dependencies(self):
         imports = pipreqs.get_all_imports(self.project_with_duplicated_deps)
         pkgs = pipreqs.get_pkg_names(imports)
